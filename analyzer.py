@@ -56,13 +56,31 @@ class ValuationAnalyzer:
         
         # 按分类统计
         report.append("【分类统计】")
-        category_stats = results_df.groupby('category').agg({
-            'bank_name': 'count',
-            'current_pb': ['mean', 'min', 'max'],
-            'roe': ['mean', 'min', 'max'],
-            'dividend_yield': 'mean',
-        }).round(3)
-        report.append(str(category_stats))
+        report.append("")
+        
+        # 统计每个分类的详细数据
+        category_list = sorted(results_df['category'].unique())
+        
+        # 表头
+        report.append(f"{'分类':<15} {'银行数':<8} {'平均PB':<10} {'PB范围':<20} {'平均ROE':<10} {'股息率':<10}")
+        report.append("-" * 80)
+        
+        for category in category_list:
+            cat_df = results_df[results_df['category'] == category]
+            count = len(cat_df)
+            avg_pb = cat_df['current_pb'].mean()
+            min_pb = cat_df['current_pb'].min()
+            max_pb = cat_df['current_pb'].max()
+            avg_roe = cat_df['roe'].mean()
+            avg_dividend = cat_df['dividend_yield'].mean()
+            
+            pb_range = f"{min_pb:.3f}x - {max_pb:.3f}x"
+            
+            report.append(
+                f"{category:<15} {count:<8} {avg_pb:<10.3f} {pb_range:<20} "
+                f"{avg_roe:<10.2%} {avg_dividend:<10.2%}"
+            )
+        
         report.append("")
         
         # 机会识别
@@ -203,6 +221,66 @@ class ValuationAnalyzer:
                 report.append(f"     价格差距: {riv_comp.get('price_difference'):.2f}元")
                 report.append(f"     估值状态: {riv_comp.get('status')}")
                 report.append("")
+            
+            # 相对估值法（PE/PB倍数法）
+            if result.get('relative'):
+                relative = result['relative']
+                report.append(f"  4. 相对估值法（PE/PB倍数法）")
+                report.append("")
+                
+                # PB相对估值
+                if relative.get('pb_premium'):
+                    pb_premium = relative['pb_premium']
+                    report.append(f"     【基于PB的相对估值】")
+                    if pb_premium.get('current_pb') is not None:
+                        report.append(f"     当前PB: {pb_premium.get('current_pb'):.3f}x")
+                    if pb_premium.get('peer_pb_median') is not None:
+                        report.append(f"     同行业PB中位数: {pb_premium.get('peer_pb_median'):.3f}x")
+                    if pb_premium.get('premium_to_median_pct') is not None:
+                        report.append(f"     PB溢价/折价: {pb_premium.get('premium_to_median_pct'):.2f}%")
+                    report.append("")
+                
+                # PB与同行业对比
+                if relative.get('pb_comparison'):
+                    pb_comp = relative['pb_comparison']
+                    report.append(f"     【PB同行业对比】")
+                    if pb_comp.get('valuation_status'):
+                        report.append(f"     估值状态: {pb_comp.get('valuation_status')}")
+                    report.append("")
+                
+                # 合理PB范围
+                if relative.get('fair_pb_by_peers'):
+                    fair_pb = relative['fair_pb_by_peers']
+                    report.append(f"     【基于同行业的合理PB】")
+                    if fair_pb.get('method'):
+                        report.append(f"     计算方法: {fair_pb.get('method')}")
+                    if fair_pb.get('fair_pb') is not None:
+                        report.append(f"     合理PB: {fair_pb.get('fair_pb'):.3f}x")
+                    if fair_pb.get('min_pb') is not None and fair_pb.get('max_pb') is not None:
+                        report.append(f"     PB范围: {fair_pb.get('min_pb'):.3f}x - {fair_pb.get('max_pb'):.3f}x")
+                    report.append("")
+                
+                # 基于PE的相对估值
+                if relative.get('pe_comparison'):
+                    pe_comparison = relative['pe_comparison']
+                    report.append(f"     【基于PE的相对估值】")
+                    if pe_comparison.get('current_pe') is not None:
+                        report.append(f"     当前PE: {pe_comparison.get('current_pe'):.2f}x")
+                    if pe_comparison.get('peer_pe_median') is not None:
+                        report.append(f"     同行业PE中位数: {pe_comparison.get('peer_pe_median'):.2f}x")
+                    if pe_comparison.get('valuation_status'):
+                        report.append(f"     PE估值状态: {pe_comparison.get('valuation_status')}")
+                    report.append("")
+                
+                # 同行业分位数分析
+                if relative.get('percentile_analysis'):
+                    percentile = relative['percentile_analysis']
+                    report.append(f"     【同行业分位百分比】")
+                    if percentile.get('percentile') is not None:
+                        report.append(f"     分位数: {percentile.get('percentile'):.1f}%")
+                    if percentile.get('valuation_tier'):
+                        report.append(f"     估值等级: {percentile.get('valuation_tier')}")
+                    report.append("")
             
             report.append("")
         
