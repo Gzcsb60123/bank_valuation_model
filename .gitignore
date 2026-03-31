@@ -174,3 +174,5 @@ GITHUB_OPEN_SOURCE_QUICK_START.md
 GITHUB_SECURITY_CHECKLIST.md
 START_HERE_开源指南.md
 docs/QUICKSTART.md
+cleanup.sh
+security_check.sh
